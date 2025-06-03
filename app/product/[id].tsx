@@ -80,191 +80,49 @@ export default function ProductScreen() {
           // Continue without blocking if Supabase has an error
         }
 
-        // Step 2: Fetch product info from OpenFoodFacts
-        let offProduct: any = null;
+        // Step 2: Call Supabase Edge Function to process product data
+        const supabaseEdgeFunctionUrl = `${Constants.expoConfig?.extra?.supabaseUrl}/functions/v1/process-product`;
+
         try {
-          const offResponse = await fetch(`https://world.openfoodfacts.org/api/v0/product/${id}.json`);
-          const offData = await offResponse.json();
-
-          if (offData.status !== 1 || !offData.product) {
-            throw new Error('Product not found on OpenFoodFacts.');
-          }
-          offProduct = offData.product;
-        } catch (offError: any) {
-          console.error('OpenFoodFacts fetch error:', offError);
-          setError(offError.message || 'Failed to fetch product from OpenFoodFacts.');
-          setLoading(false);
-          return;
-        }
-
-        const productName = offProduct.product_name || offProduct.product_name_en || 'Unknown Product';
-        const productBrand = offProduct.brands || 'Unknown Brand';
-        const productImageUrl = offProduct.image_front_url || offProduct.image_url || 'https://via.placeholder.com/150';
-
-        // Step 3: Use OpenRouter AI to predict the most likely product webpage URL
-        let productUrl: string | undefined;
-        try {
-          const openRouterApiKey = Constants.expoConfig?.extra?.OPENROUTER_API_KEY as string;
-          if (!openRouterApiKey) {
-            throw new Error('OPENROUTER_API_KEY is not set in app.config.ts');
-          }
-
-          const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          const edgeFunctionResponse = await fetch(supabaseEdgeFunctionUrl, {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${openRouterApiKey}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              model: 'perplexity/llama-3-sonar-small-32k-online', // Using Perplexity's online model for URL prediction
-              messages: [
-                { role: 'user', content: `Find the official product website URL for "${productName} by ${productBrand}". Provide only the URL, no other text.` },
-              ],
+              productIdentifier: id,
+              productUrl: "https://www.transparentlabs.com/products/creatine-hcl",
             }),
           });
 
-          const openRouterData = await openRouterResponse.json();
-          const predictedUrl = openRouterData.choices[0]?.message?.content?.trim();
-
-          if (predictedUrl && predictedUrl.startsWith('http')) {
-            productUrl = predictedUrl;
-          } else {
-            console.warn('Could not find a valid product URL from OpenRouter AI.');
-          }
-        } catch (aiUrlError: any) {
-          console.error('OpenRouter URL prediction error:', aiUrlError);
-          // Continue without a product URL if AI fails
-        }
-
-        let scrapedContent = '';
-        // Step 4: Scrape the page using Firecrawl API
-        if (productUrl) {
-          try {
-            const firecrawlApiKey = Constants.expoConfig?.extra?.FIRECRAWL_API_KEY as string;
-            if (!firecrawlApiKey) {
-              throw new Error('FIRECRAWL_API_KEY is not set in app.config.ts');
-            }
-
-            const firecrawlResponse = await fetch('https://api.firecrawl.dev/v0/scrape', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${firecrawlApiKey}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ url: productUrl }),
-            });
-
-            const firecrawlData = await firecrawlResponse.json();
-            scrapedContent = firecrawlData.data?.content || '';
-            if (!scrapedContent) {
-              console.warn('No content scraped from the product URL.');
-            }
-          } catch (firecrawlError: any) {
-            console.error('Firecrawl API scrape error:', firecrawlError);
-            // Continue without scraped content if Firecrawl fails
-          }
-        }
-
-        // Step 5: Send the scraped data to another OpenRouter AI (Meta LLaMA model) for scoring
-        let overallScore = 0;
-        let overallSummary = 'No summary available.';
-        let highlights: string[] = [];
-
-        try {
-          const openRouterApiKey = Constants.expoConfig?.extra?.OPENROUTER_API_KEY as string; // Re-use key
-          if (!openRouterApiKey) {
-            throw new Error('OPENROUTER_API_KEY is not set in app.config.ts');
+          if (!edgeFunctionResponse.ok) {
+            const errorData = await edgeFunctionResponse.json();
+            throw new Error(`Edge Function error: ${edgeFunctionResponse.status} - ${errorData.error || 'Unknown error'}`);
           }
 
-          const scoringPrompt = `Given the following product information and scraped content, score the product from 0-100 based on its quality, transparency, and value. Also, provide 2-3 short bullet point highlights summarizing the key aspects of the product.
+          const processedProductData = await edgeFunctionResponse.json();
 
-Product Name: ${productName}
-Brand: ${productBrand}
-Scraped Content:
-${scrapedContent.substring(0, 4000)} // Limit content to avoid token limits
-
-Output format:
-SCORE: [0-100]
-HIGHLIGHTS:
-- Highlight 1
-- Highlight 2
-- Highlight 3 (optional)
-`;
-
-          const scoringResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${openRouterApiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: 'meta-llama/llama-3-8b-instruct', // Using Meta LLaMA model
-              messages: [
-                { role: 'user', content: scoringPrompt },
-              ],
-            }),
+          setProduct({
+            upc: processedProductData.upc,
+            name: processedProductData.name,
+            brand: processedProductData.brand,
+            imageUrl: processedProductData.imageUrl,
+            overallScore: processedProductData.overallScore,
+            overallSummary: processedProductData.overallSummary,
+            categories: processedProductData.categories || [],
+            productUrl: processedProductData.productUrl,
+            highlights: processedProductData.highlights || [],
           });
 
-          const scoringData = await scoringResponse.json();
-          const scoringResult = scoringData.choices[0]?.message?.content?.trim();
 
-          if (scoringResult) {
-            const scoreMatch = scoringResult.match(/SCORE:\s*(\d+)/);
-            if (scoreMatch) {
-              overallScore = parseInt(scoreMatch[1], 10);
-            }
-
-            const highlightsMatch = scoringResult.match(/HIGHLIGHTS:\n((?:- .+\n?)+)/);
-            if (highlightsMatch) {
-              highlights = highlightsMatch[1].split('\n').filter(line => line.startsWith('- ')).map(line => line.substring(2).trim());
-              overallSummary = highlights.join('\n');
-            }
-          }
-        } catch (aiScoringError: any) {
-          console.error('OpenRouter AI scoring error:', aiScoringError);
-          // Use default fallback values if AI scoring fails
-        }
-
-        const newProductData: ProductData = {
-          upc: id,
-          name: productName,
-          brand: productBrand,
-          imageUrl: productImageUrl,
-          overallScore: overallScore,
-          overallSummary: overallSummary,
-          categories: [], // No detailed categories from AI for now
-          productUrl: productUrl,
-          highlights: highlights, // Ensure highlights are passed
-        };
-        setProduct(newProductData);
-
-        // Step 6: Store that result in Supabase
-        try {
-          const { error: insertError } = await supabase
-            .from('products')
-            .upsert({
-              upc: newProductData.upc,
-              name: newProductData.name,
-              brand: newProductData.brand,
-              image: newProductData.imageUrl,
-              score: newProductData.overallScore,
-              highlights: newProductData.highlights, // Store highlights as an array
-              productUrl: newProductData.productUrl,
-            }, { onConflict: 'upc' });
-
-          if (insertError) {
-            console.error('Supabase insert/upsert error:', insertError);
-            Alert.alert('Error', 'Failed to save product data to Supabase.');
-          }
-        } catch (supabaseInsertError: any) {
-          console.error('Supabase insert/upsert error (outer catch):', supabaseInsertError);
-          Alert.alert('Error', 'Failed to save product data to Supabase.');
+        } catch (edgeFunctionError: any) {
+          console.error('Edge Function call error:', edgeFunctionError);
+          setError(edgeFunctionError.message || 'Failed to process product data via Edge Function.');
         }
 
       } catch (err: any) {
         console.error('Error fetching product data (main catch):', err);
         setError(err.message || 'An unknown error occurred during product data fetching.');
-        Alert.alert('Error', err.message || 'An unknown error occurred during product data fetching.');
       } finally {
         setLoading(false);
       }
@@ -396,7 +254,7 @@ HIGHLIGHTS:
           variant="secondary"
           fullWidth
           style={styles.compareButton}
-          onPress={() => router.push('/new-comparison?product=' + product.upc)}
+          onPress={() => router.push({ pathname: '/new-comparison', params: { product: product.upc } })}
         />
       </ScrollView>
       

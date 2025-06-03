@@ -25,7 +25,7 @@ export default {
     "extra": {
       "supabaseUrl": process.env.EXPO_PUBLIC_SUPABASE_URL,
       "supabaseAnonKey": process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
-      "OPENROUTER_API_KEY": process.env.OPENROUTER_API_KEY,
+      "OPENROUTER_API_KEY": process.env.EXPO_PUBLIC_OPENROUTER_API_KEY,
       "FIRECRAWL_API_KEY": process.env.FIRECRAWL_API_KEY,
       "eas": {
         "projectId": "your-eas-project-id" // Replace with your actual EAS project ID if you have one

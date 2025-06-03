@@ -1,3 +1,5 @@
+import * as Clipboard from 'expo-clipboard';
+import 'react-native-get-random-values'; // polyfill for crypto.randomUUID on older Expo
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView, Alert, Platform } from 'react-native';
 import { router } from 'expo-router';
@@ -13,6 +15,7 @@ import { Camera, Link2, FileText, ChevronRight, ScanLine, History } from 'lucide
 import * as ImagePicker from 'expo-image-picker';
 import { BarCodeScanner } from 'expo-barcode-scanner';
 import Constants from 'expo-constants';
+import { supabase } from '@/lib/supabase';
 
 export default function HomeScreen() {
   const { isDark } = useTheme();
@@ -23,7 +26,7 @@ export default function HomeScreen() {
   const [recentScans, setRecentScans] = useState<any[]>([]);
 
   // This would be populated from real data in a full implementation
-  const hasRecentScans = false;
+  const hasRecentScans = recentScans.length > 0;
   
   const requestCameraPermission = async () => {
     const { status } = await BarCodeScanner.requestPermissionsAsync();
@@ -46,22 +49,32 @@ export default function HomeScreen() {
     }
   };
 
-  const handlePasteUrl = () => {
-    Alert.alert(
-      'Paste Product URL',
-      'Enter a URL to a supplement product page:',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Analyze',
-          onPress: () => router.push('/product/123'),
-        },
-      ]
-    );
-  };
+const handlePasteUrl = async () => {
+  console.log("handlePasteUrl called");
+  const productUrl = (await Clipboard.getStringAsync())?.trim();
+  const productIdentifier = crypto.randomUUID(); // temporary ID until DB row exists
+
+  if (!productUrl || !/^https?:\/\/.+/i.test(productUrl)) {
+    Alert.alert("No valid URL detected", "Copy a product page URL first.");
+    return;
+  }
+
+  console.log("Submitting URL to Supabase:", productUrl);
+
+  try {
+    const { data, error } = await supabase.functions.invoke("process-product", {
+      body: { productIdentifier, productUrl },
+    });
+    if (error) throw error;
+
+    console.log("Edge Function OK:", data);
+    setRecentScans(prev => [...prev, { id: productIdentifier, url: productUrl }]);
+    router.push(`/product/${productIdentifier}`);
+  } catch (err) {
+    console.error("Edge Function error:", err);
+    Alert.alert("Error", "Something went wrong—check the console.");
+  }
+};
 
   const handleUploadImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -96,7 +109,7 @@ export default function HomeScreen() {
           </Typography>
           <Typography 
             variant="body" 
-            style={[styles.subtitle, { color: colors.textSecondary }]}
+            style={{ ...styles.subtitle, color: colors.textSecondary }}
           >
             The truth behind every pill
           </Typography>
@@ -202,9 +215,22 @@ export default function HomeScreen() {
           </View>
           
           {hasRecentScans ? (
-            <View>
-              {/* Recent scans would be displayed here */}
-              {/* This would be populated with actual data in a real app */}
+            <View style={{ marginTop: 8 }}>
+              {recentScans.map((scan, index) => (
+                <TouchableOpacity
+                  key={scan.id}
+                  style={{
+                    paddingVertical: 12,
+                    borderBottomWidth: index < recentScans.length - 1 ? 1 : 0,
+                    borderBottomColor: colors.border,
+                  }}
+                  onPress={() => router.push(`/product/${scan.id}`)}
+                >
+                  <Typography variant="body" style={{ color: colors.text }}>
+                    {scan.url}
+                  </Typography>
+                </TouchableOpacity>
+              ))}
             </View>
           ) : (
             <ScanPlaceholder />

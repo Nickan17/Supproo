@@ -3,12 +3,12 @@ import { createClient } from '@supabase/supabase-js';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const supabaseUrl = "https://uaqcehoocecvihubnbhp.supabase.co";
-const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhcWNlaG9vY2VjdmlodWJuYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgzNzc4ODEsImV4cCI6MjA2Mzk1Mzg4MX0.vyahdG1amAhAwm_1FTe8bHs1o7onpXMLlJsFx3IOR0U";
+const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl as string;
+const supabaseAnonKey = Constants.expoConfig?.extra?.supabaseAnonKey as string;
 
-// WARNING: Hardcoded Supabase credentials for testing.
-// This should NOT be used in production.
-// The original intention was to load these from Constants.expoConfig?.extra.
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Supabase URL or Anon Key is missing in app.config.ts extra field. Please ensure EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY are set in your .env file and exposed in app.config.ts.');
+}
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
