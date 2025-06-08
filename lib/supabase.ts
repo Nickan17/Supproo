@@ -11,6 +11,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  // Add the global headers here
+  global: {
+    headers: {
+      Accept: 'application/json',
+    },
+  },
+  // Keep your existing auth configuration
   auth: {
     storage: AsyncStorage,
     autoRefreshToken: true,

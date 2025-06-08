@@ -1,10 +1,3 @@
 {
-  "url": "https://www.transparentlabs.com/products/creatine-hcl",
-  "extractorOptions": {
-    "mode": "llm-extract",
-    "llm_prompt": "Extract the URL of the Supplement Facts image from the webpage. Provide the output strictly as a JSON object matching the schema. If the image URL is not found, return an empty string for the field.",
-    "schema": {
-      "supplement_facts_image_url": "string"
-    }
-  }
+  "upc": "748927053007"
 }

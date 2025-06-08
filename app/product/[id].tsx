@@ -55,7 +55,7 @@ export default function ProductScreen() {
         const { data: existingProduct, error: supabaseError } = await supabase
           .from('products')
           .select('*')
-          .eq('upc', id)
+          .or(`id.eq.${id},upc.eq.${id}`)
           .single();
 
         if (existingProduct) {
@@ -65,7 +65,7 @@ export default function ProductScreen() {
             brand: existingProduct.brand || 'N/A',
             imageUrl: existingProduct.image || 'https://via.placeholder.com/150',
             overallScore: existingProduct.score,
-            overallSummary: existingProduct.highlights.join('\n'),
+            overallSummary: Array.isArray(existingProduct.highlights) ? existingProduct.highlights.join('\n') : 'N/A', // FIX IS HERE
             categories: [], // Supabase doesn't store categories in this schema
             productUrl: existingProduct.productUrl,
             highlights: existingProduct.highlights, // Ensure highlights are passed
