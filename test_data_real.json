@@ -1,0 +1,56 @@
+{
+  "product_id": "748927023075",
+  "ingredients": [
+    {
+      "name": "Whey Protein Isolate",
+      "dosage": "24 g"
+    },
+    {
+      "name": "Whey Protein Concentrate",
+      "dosage": "4 g"
+    },
+    {
+      "name": "Hydrolyzed Whey Protein Isolate",
+      "dosage": "2 g"
+    },
+    {
+      "name": "Natural and Artificial Flavors",
+      "dosage": "varies"
+    },
+    {
+      "name": "Lecithin",
+      "dosage": "varies"
+    },
+    {
+      "name": "Salt",
+      "dosage": "varies"
+    },
+    {
+      "name": "Sucralose",
+      "dosage": "varies"
+    },
+    {
+      "name": "Acesulfame Potassium",
+      "dosage": "varies"
+    }
+  ],
+  "brand": "Optimum Nutrition",
+  "product_name": "Gold Standard 100% Whey",
+  "label_claims": [
+    "24 g Protein per serving",
+    "Supports Muscle Recovery",
+    "Builds Lean Muscle"
+  ],
+  "certifications": [
+    "Informed-Choice Certified",
+    "NSF Certified for Sport"
+  ],
+  "warnings": [
+    "Contains Milk and Soy",
+    "This product is labelled to United States standards and may differ from similar products sold elsewhere in its ingredients, labeling and allergen warnings"
+  ],
+  "reviews": {
+    "positive": 165000,
+    "negative": 6200
+  }
+}

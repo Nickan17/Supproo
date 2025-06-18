@@ -1,0 +1,36 @@
+{
+  "product_id": "1234567890",
+  "ingredients": [
+    {
+      "name": "Vitamin D3",
+      "dosage": "5000 IU",
+      "form": "Cholecalciferol"
+    },
+    {
+      "name": "Magnesium",
+      "dosage": "200mg",
+      "form": "Citrate"
+    },
+    {
+      "name": "Zinc",
+      "dosage": "15mg",
+      "form": "Picolinate"
+    }
+  ],
+  "brand": "Example Brand",
+  "product_name": "Example Supplement",
+  "label_claims": [
+    "Supports bone health",
+    "Boosts immune function"
+  ],
+  "certifications": [
+    "NSF Certified"
+  ],
+  "warnings": [
+    "Keep out of reach of children"
+  ],
+  "reviews": {
+    "positive": 4.5,
+    "negative": 0.5
+  }
+}

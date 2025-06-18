@@ -1,0 +1,4 @@
+{
+  "deno.enable": true,
+  "deno.config": "./supabase/functions/score-supplement/deno.json"
+}

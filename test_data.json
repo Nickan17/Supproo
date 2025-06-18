@@ -1,0 +1,14 @@
+{
+  "product_id": "P123456789",
+  "ingredients": [
+    { "name": "Curcumin", "dosage": "500mg", "form": "BCM-95" },
+    { "name": "Piperine", "dosage": "5mg" },
+    { "name": "Magnesium Citrate", "dosage": "200mg" }
+  ],
+  "brand": "Wellness Labs",
+  "product_name": "Ultra Joint Support",
+  "label_claims": ["Reduces inflammation", "Improves flexibility", "High bioavailability"],
+  "certifications": ["NSF Certified", "Informed Sport"],
+  "warnings": ["Consult physician if pregnant"],
+  "reviews": { "positive": 250, "negative": 15 }
+}
