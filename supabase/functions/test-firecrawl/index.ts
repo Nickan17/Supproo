@@ -7,6 +7,7 @@ serve(async (_req) => {
     return new Response('❌ FIRECRAWL_API_KEY environment variable is not set.', { status: 500 });
   }
 
+<<<<<<< HEAD
   const url = 'https://www.transparentlabs.com/products/preseries-bulk-preworkout';
 
   const fcBody = {
@@ -52,11 +53,42 @@ serve(async (_req) => {
 
     const result = await res.json();
 
+=======
+  const requestBody = {
+    url: 'https://www.transparentlabs.com/products/preseries-bulk-preworkout',
+    usePuppeteer: true
+  };
+
+  try {
+    const res = await fetch('https://api.firecrawl.dev/v1/scrape', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${FIRECRAWL_API_KEY}`
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      console.error('❌ Firecrawl API Error:', result);
+      return new Response(JSON.stringify({ error: result }), {
+        status: res.status,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+>>>>>>> 79faa5f2d00c2757087b0a559bab3cd4b4d2309f
     return new Response(JSON.stringify(result), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
+<<<<<<< HEAD
   } catch (err: any) {
+=======
+  } catch (err) {
+>>>>>>> 79faa5f2d00c2757087b0a559bab3cd4b4d2309f
     console.error('❌ Unexpected Function Error:', err);
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,

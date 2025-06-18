@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 /// <reference types="https://deno.land/x/types@v0.3/index.d.ts" />
+=======
+/// <reference types="https://deno.land/x/types@v0.1/index.d.ts" />
+>>>>>>> 79faa5f2d00c2757087b0a559bab3cd4b4d2309f
 // This function is ready for cloud deployment using:
 // npx supabase functions deploy process-upc --no-verify-jwt
 
@@ -233,7 +237,11 @@ serve(async (req: Request) => {
 
       console.log("🤖 OpenRouter raw response (including tags):", responseText);
 
+<<<<<<< HEAD
       const urlMatch = responseText.match(/<url>\s*(https?:\/\/[<\s]+)\s*<\/url>/i);
+=======
+      const urlMatch = responseText.match(/<url>\s*(https?:\/\/[^<\s]+)\s*<\/url>/i);
+>>>>>>> 79faa5f2d00c2757087b0a559bab3cd4b4d2309f
       if (urlMatch && urlMatch[1] && urlMatch[1].startsWith("http") && urlMatch[1] !== "NOT_FOUND") {
         finalUrl = urlMatch[1];
         source = "openrouter";
@@ -265,13 +273,18 @@ serve(async (req: Request) => {
           { status: 404, headers },
         );
       }
+<<<<<<< HEAD
     } catch (err: any) {
+=======
+    } catch (err) {
+>>>>>>> 79faa5f2d00c2757087b0a559bab3cd4b4d2309f
       console.error("🛑 Error validating final URL before scrape:", err);
       return new Response(
         JSON.stringify({ error: "Could not verify product URL before scrape.", product_url: finalUrl, upc, source }),
         { status: 502, headers },
       );
     }
+<<<<<<< HEAD
         // Send the resolved URL to Firecrawl for extraction
     const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
     if (!firecrawlKey) {
@@ -316,3 +329,98 @@ serve(async (req: Request) => {
     );
   }
 });
+=======
+
+    // Send the resolved URL to Firecrawl for full scraping
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25000); // 25 seconds
+
+    try {
+      const firecrawlRes = await fetch(`${FIRECRAWL_BASE_URL}/v1/scrape`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
+        },
+        body: JSON.stringify({
+          url: finalUrl,
+          formats: ["rawHtml"],
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+
+      if (!firecrawlRes.ok) {
+        throw new Error(`Firecrawl API error: ${firecrawlRes.status}`);
+      }
+
+      const firecrawlData = await firecrawlRes.json();
+      console.log("Firecrawl Response:", firecrawlData);
+
+      const raw_html = firecrawlData?.data?.rawHtml || null;
+
+      if (!raw_html) {
+        console.error("🔥 No rawHtml found in Firecrawl response:", JSON.stringify(firecrawlData, null, 2));
+        return new Response(JSON.stringify({ error: "No rawHtml found in Firecrawl response" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      console.log("🧪 Writing to table:", "raw_products");
+      console.log(`[${new Date().toISOString()}] Inserting into Supabase raw_products table for UPC: ${upc}`);
+
+      const { data, error: dbError } = await supabase
+        .from("raw_products")
+        .upsert([
+          { upc: upc, raw_content: raw_html, scraped_at: new Date().toISOString() }
+        ], { onConflict: "upc", ignoreDuplicates: false })
+        .select();
+
+      if (dbError) {
+        console.error("Database Insert/Update Error:", dbError);
+        return new Response(JSON.stringify({ status: 500, source: "database", error: dbError.message, details: dbError }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      console.log("Database insert/update successful:", data);
+
+      // Final successful response
+      return new Response(
+        JSON.stringify({
+          status: 200,
+          source: "firecrawl",
+          product_url: finalUrl,
+          message: "Product scraped and data processed successfully."
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    } catch (err: any) {
+      clearTimeout(timeout);
+      if (err.name === 'AbortError') {
+        console.error("Firecrawl fetch timed out:", err);
+        return new Response(
+          JSON.stringify({ error: `Firecrawl scraping timed out: ${err.message}` }),
+          { status: 500 }
+        );
+      } else {
+        console.error("Firecrawl fetch failed:", err);
+        return new Response(
+          JSON.stringify({ error: `Firecrawl scraping failed: ${err.message}` }),
+          { status: 500 }
+        );
+      }
+    }
+
+  } catch (e: any) { // Outer catch for any unhandled errors in the main Deno.serve block
+    console.error("Unhandled error in main serve function:", e);
+    return new Response(JSON.stringify({ error: "Internal Server Error", details: `${e.message || e}` }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  }
+}); // Correct closing for Deno.serve
+>>>>>>> 79faa5f2d00c2757087b0a559bab3cd4b4d2309f
