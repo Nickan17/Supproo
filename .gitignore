@@ -33,3 +33,10 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+supabase/.temp/
+supabase/.branches
+supabase/gotrue-version
+supabase/pooler-url
+supabase/postgres-version
+supabase/project-ref
+supabase/rest-version

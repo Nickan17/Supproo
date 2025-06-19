@@ -1,4 +1,6 @@
 /// <reference lib="deno.ns" />
+// This function takes a UPC, resolves it to a product, optionally scrapes the product page, and then scores the supplement.
+// It calls the firecrawl-extract function to perform the scraping.
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import type { SupplementData } from "../../_shared/types.ts";
 
@@ -44,8 +46,6 @@ serve(async (req) => {
 
   if (!upc) return new Response(`{"error":"missing upc"}`, { status: 400, headers: { "Content-Type": "application/json" } });
 
-  if (!upc) return new Response(`{"error":"missing upc"}`, { status: 400, headers: { "Content-Type": "application/json" } });
-
   /** 1 — resolve-upc */
   const res1 = await fetch(`${new URL(req.url).origin}/functions/v1/resolve-upc?upc=${encodeURIComponent(upc)}`, {
     headers: withHeaders(),
@@ -58,27 +58,12 @@ serve(async (req) => {
   let scraped: string | null = null;
   const site = await findOfficialWebsite(`${data.brand} ${data.product_name}`);
   if (site) {
-    const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
-    if (!firecrawlKey) {
-      return new Response(JSON.stringify({ error: "Missing FIRECRAWL_API_KEY" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    const fcBody = {
-      urls: [site],
-      prompt: "Extract ingredients (name, dosage, form), certifications, price per serving, label image URLs.",
-      agent: { model: "FIRE-1" }  // explicit but optional
-    };
-
-    const fcRes = await fetch("https://api.firecrawl.dev/v1/extract", {
+    const fcRes = await fetch(`${new URL(req.url).origin}/functions/v1/firecrawl-extract`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${firecrawlKey}`,
       },
-      body: JSON.stringify(fcBody),
+      body: JSON.stringify({ url: site }),
     });
 
     if (!fcRes.ok) {
